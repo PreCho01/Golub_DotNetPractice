@@ -41,7 +41,8 @@ namespace WorkerService
                     await handler.SaveDataAsync(model, tableName);
 
                     string saveFolder = Path.Combine(Directory.GetCurrentDirectory(), "SavedJsons");
-                    await SaveInFile.SaveJsonToFileAsync(model, saveFolder, $"{Path.GetFileNameWithoutExtension(fileName)}_output.json");
+                    //await SaveInFile.SaveJsonToFileAsync(model, saveFolder, $"{Path.GetFileNameWithoutExtension(fileName)}_output.json");
+                    await SaveInFile.SaveXmlToFileAsync(model, saveFolder, $"{Path.GetFileNameWithoutExtension(fileName)}_output.xlsm");
 
                     _logger.LogInformation($"Processed {fileName} into {tableName}");
                 }

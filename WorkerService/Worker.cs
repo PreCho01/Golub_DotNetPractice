@@ -20,7 +20,8 @@ namespace WorkerService
         {
             var connStr = _config.GetAppSettings("DefaultConnection", "ConnectionStrings");
 
-            await ProcessJsonFileAsync<Employee>("empData.json", "Employee", connStr);
+            // await ProcessJsonFileAsync<Employee>("empData.json", "Employee", connStr);
+            await ProcessJsonFileAsync<Car>("Car.json", "Car", connStr);
 
         }
 
@@ -55,7 +56,7 @@ namespace WorkerService
                 _logger.LogError($"File {jsonFilePath} does not exist.");
             }
 
-            _logger.LogInformation("File Processed completed.");
+            _logger.LogInformation($"{fileName} File processed completed.");
 
         }
     }

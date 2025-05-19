@@ -1,4 +1,5 @@
-﻿using CommonHelper;
+﻿using System.ComponentModel.DataAnnotations;
+using CommonHelper;
 using Dapper;
 using Microsoft.Data.SqlClient;
 
@@ -13,13 +14,13 @@ namespace WorkerService.Preeti
             _connStr = connStr;
         }
 
-        // Save data to SQL
+        // Saving data to SQL
         public async Task SaveDataAsync(T data, string tableName)
         {
             using var connection = new SqlConnection(_connStr);
             await connection.OpenAsync();
 
-            // Check if table exists, create if not
+            // Checking if table exists, create if not
             var checkTableQuery = $@"
                 IF NOT EXISTS (
                     SELECT * FROM INFORMATION_SCHEMA.TABLES 
@@ -34,12 +35,51 @@ namespace WorkerService.Preeti
             await connection.ExecuteAsync(checkTableQuery);
 
             // Insert data into the table
-            var props = typeof(T).GetProperties();
-            var columns = string.Join(",", props.Select(p => p.Name));
-            var values = string.Join(",", props.Select(p => "@" + p.Name));
-            var query = $"INSERT INTO {tableName} ({columns}) VALUES ({values})";
+            //var props = typeof(T).GetProperties();
+            //var columns = string.Join(",", props.Select(p => p.Name));
+            //var values = string.Join(",", props.Select(p => "@" + p.Name));
+            //var query = $"INSERT INTO {tableName} ({columns}) VALUES ({values})";
 
-            await connection.ExecuteAsync(query, data);
+            //await connection.ExecuteAsync(query, data);
+
+            var props = typeof(T).GetProperties();
+            var whereConditions = new List<string>();
+            var parameters = new DynamicParameters();
+
+            foreach (var prop in props)
+            {
+                var value = prop.GetValue(data);
+                if (value == null)
+                {
+                    whereConditions.Add($"{prop.Name} IS NULL");
+                }
+                else
+                {
+                    whereConditions.Add($"{prop.Name} = @{prop.Name}");
+                    parameters.Add($"@{prop.Name}", value);
+                }
+            }
+
+            var whereClause = string.Join(" AND ", whereConditions);
+            var checkDuplicateQuery = $"SELECT COUNT(1) FROM {tableName} WHERE {whereClause}";
+
+            var exists = await connection.ExecuteScalarAsync<int>(checkDuplicateQuery, parameters);
+
+            if (exists == 0)
+            {
+                var columns = string.Join(",", props.Select(p => p.Name));
+                var values = string.Join(",", props.Select(p => "@" + p.Name));
+                var insertQuery = $"INSERT INTO {tableName} ({columns}) VALUES ({values})";
+
+                await connection.ExecuteAsync(insertQuery, data);
+                Console.WriteLine("New data inserted into table.");
+            }
+            else
+            {
+                Console.WriteLine("Input data is already present in the table. Skipping insert.");
+
+            }
+
         }
 
         // Generate dynamic SQL columns based on the model

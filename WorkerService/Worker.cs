@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using CommonHelper;
+using WorkerService.Harshit.Services;
 using WorkerService.Models;
 using WorkerService.Preeti;
 
@@ -11,16 +12,25 @@ namespace WorkerService
         private readonly ILogger<Worker> _logger;
 
         private IConfigSetting _config;
-        public Worker(ILogger<Worker> logger, IConfigSetting config)
+        private readonly DataHandlerService _dataHandlerService;
+        public Worker(ILogger<Worker> logger, IConfigSetting config,DataHandlerService dataHandlerService)
         {
             _logger = logger;
             _config = config;
+            _dataHandlerService = dataHandlerService;
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             var connStr = _config.GetAppSettings("DefaultConnection", "ConnectionStrings");
-
-            await ProcessJsonFileAsync<Employee>("empData.json", "Employee", connStr);
+            int userOption = Convert.ToInt32(Console.ReadLine());
+            switch (userOption)
+            {
+                case 0: await ProcessJsonFileAsync<Employee>("empData.json", "Employee", connStr);
+                    break;
+                case 1:
+                    await ProcessDataFromJson<Product>("Products.json", "Product");
+                    break;
+            }
 
         }
 
@@ -58,6 +68,26 @@ namespace WorkerService
 
             _logger.LogInformation($"{fileName} File processed completed.");
 
+        }
+        private async Task ProcessDataFromJson <T> (string fileName, string tableName)
+        {
+            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "InputFiles", fileName);
+
+            if (!File.Exists(filePath))
+            {
+                _logger.LogError("File not found: " + filePath);
+            }
+            try
+            {
+                var jsonData = await File.ReadAllTextAsync(filePath);
+
+                var data = JsonSerializer.Deserialize<List<T>>(jsonData);
+               await _dataHandlerService.AddDataToDb(jsonData, tableName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error: {ex.Message} ");
+            }
         }
     }
 }

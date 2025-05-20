@@ -1,6 +1,4 @@
-﻿using System.IO;
-using System.Xml.Serialization;
-using ClosedXML.Excel;
+﻿using ClosedXML.Excel;
 using Newtonsoft.Json;
 
 namespace WorkerService.Preeti
@@ -18,26 +16,13 @@ namespace WorkerService.Preeti
             await File.WriteAllTextAsync(fullPath, json);
         }
 
-        public static async Task SaveXmlToFileAsync<T>(T data, string folderPath, string fileName)
+        public static async Task SaveExcelToFileAsync<T>(T data, string folderPath, string fileName)
         {             
             if (!Directory.Exists(folderPath)) 
             {              
                 Directory.CreateDirectory(folderPath);        
             }
             string fullPath = Path.Combine(folderPath, fileName);
-
-            //    XmlSerializer serializer = new XmlSerializer(typeof(T));    
-            //    using (var memoryStream = new MemoryStream())            
-            //    using (var streamWriter = new StreamWriter(memoryStream))           
-            //    {                
-            //        serializer.Serialize(streamWriter, data);               
-            //        memoryStream.Position = 0;
-
-            //        using (var fileStream = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None)) 
-            //        {
-            //            await memoryStream.CopyToAsync(fileStream); 
-            //        }
-            //}
 
             await Task.Run(() =>
             {

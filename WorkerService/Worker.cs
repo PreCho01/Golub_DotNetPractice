@@ -20,8 +20,7 @@ namespace WorkerService
         {
             var connStr = _config.GetAppSettings("DefaultConnection", "ConnectionStrings");
 
-            // await ProcessJsonFileAsync<Employee>("empData.json", "Employee", connStr);
-            await ProcessJsonFileAsync<Car>("Car.json", "Car", connStr);
+            await ProcessJsonFileAsync<Employee>("empData.json", "Employee", connStr);
 
         }
 
@@ -40,9 +39,9 @@ namespace WorkerService
                     var handler = new DataHandler<T>(connStr);
                     await handler.SaveDataAsync(model, tableName);
 
-                    string saveFolder = Path.Combine(Directory.GetCurrentDirectory(), "SavedJsons");
+                    string saveFolder = Path.Combine(Directory.GetCurrentDirectory(), "SavedFiles");
                     //await SaveInFile.SaveJsonToFileAsync(model, saveFolder, $"{Path.GetFileNameWithoutExtension(fileName)}_output.json");
-                    await SaveInFile.SaveXmlToFileAsync(model, saveFolder, $"{Path.GetFileNameWithoutExtension(fileName)}_output.xlsm");
+                    await SaveInFile.SaveExcelToFileAsync(model, saveFolder, $"{Path.GetFileNameWithoutExtension(fileName)}_output.xlsm");
 
                     _logger.LogInformation($"Processed {fileName} into {tableName}");
                 }

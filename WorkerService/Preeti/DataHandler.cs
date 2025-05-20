@@ -20,7 +20,7 @@ namespace WorkerService.Preeti
             using var connection = new SqlConnection(_connStr);
             await connection.OpenAsync();
 
-            // Checking if table exists, create if not
+            // Checking if table exists, and creating if not
             var checkTableQuery = $@"
                 IF NOT EXISTS (
                     SELECT * FROM INFORMATION_SCHEMA.TABLES 
@@ -33,14 +33,6 @@ namespace WorkerService.Preeti
                 END";
 
             await connection.ExecuteAsync(checkTableQuery);
-
-            // Insert data into the table
-            //var props = typeof(T).GetProperties();
-            //var columns = string.Join(",", props.Select(p => p.Name));
-            //var values = string.Join(",", props.Select(p => "@" + p.Name));
-            //var query = $"INSERT INTO {tableName} ({columns}) VALUES ({values})";
-
-            //await connection.ExecuteAsync(query, data);
 
             var props = typeof(T).GetProperties();
             var whereConditions = new List<string>();
@@ -82,7 +74,7 @@ namespace WorkerService.Preeti
 
         }
 
-        // Generate dynamic SQL columns based on the model
+        // Generating dynamic SQL columns based on the model
         private string GenerateSqlColumns()
         {
             var props = typeof(T).GetProperties();
@@ -98,7 +90,7 @@ namespace WorkerService.Preeti
             return string.Join(",", columns);
         }
 
-        // Map C# types to SQL types
+        // Mapping C# types to SQL types
         private string GetSqlType(Type type)
         {
             Type t = Nullable.GetUnderlyingType(type) ?? type;

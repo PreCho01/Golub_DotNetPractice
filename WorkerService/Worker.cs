@@ -80,9 +80,10 @@ namespace WorkerService
             try
             {
                 var jsonData = await File.ReadAllTextAsync(filePath);
-
-                var data = JsonSerializer.Deserialize<List<T>>(jsonData);
-               await _dataHandlerService.AddDataToDb(jsonData, tableName);
+                Console.WriteLine("here");
+               
+               await _dataHandlerService.AddDataToDb<T>(JsonSerializer.Deserialize<T>(jsonData), tableName);
+                Console.WriteLine("here2");
             }
             catch (Exception ex)
             {

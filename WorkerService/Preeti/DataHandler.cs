@@ -1,7 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
-using CommonHelper;
-using Dapper;
+﻿using Dapper;
 using Microsoft.Data.SqlClient;
+using Newtonsoft.Json;
+using System.Collections;
+using System.Reflection;
 
 namespace WorkerService.Preeti
 {
@@ -14,97 +15,75 @@ namespace WorkerService.Preeti
             _connStr = connStr;
         }
 
-        // Saving data to SQL
-        public async Task SaveDataAsync(T data, string tableName)
+        public async Task SaveComplexDataAsync(object data, string tableName)
         {
             using var connection = new SqlConnection(_connStr);
             await connection.OpenAsync();
 
-            // Checking if table exists, and creating if not
-            var checkTableQuery = $@"
+            var props = data.GetType().GetProperties();
+            var columns = new List<string>();
+            var values = new List<string>();
+            var parameters = new DynamicParameters();
+
+            foreach (var prop in props)
+            {
+                if (prop.GetIndexParameters().Length > 0)
+                    continue;
+
+                string columnName = prop.Name;
+                object? value = prop.GetValue(data, null);
+
+                if (value is IEnumerable && !(value is string))
+                {
+                    // Serialize lists, dictionaries, or other collections
+                    string jsonValue = JsonConvert.SerializeObject(value);
+                    columns.Add(columnName);
+                    values.Add($"@{columnName}");
+                    parameters.Add($"@{columnName}", jsonValue);
+                }
+                else if (IsComplexType(prop.PropertyType))
+                {
+                    // Serialize nested complex objects
+                    string jsonValue = JsonConvert.SerializeObject(value);
+                    columns.Add(columnName);
+                    values.Add($"@{columnName}");
+                    parameters.Add($"@{columnName}", jsonValue);
+                }
+                else
+                {
+                    columns.Add(columnName);
+                    values.Add($"@{columnName}");
+                    parameters.Add($"@{columnName}", value);
+                }
+            }
+
+            if (columns.Count == 0 || values.Count == 0)
+            {
+                throw new InvalidOperationException("No valid columns or values found for insertion.");
+            }
+
+            // Create table if not exists
+            var createTableQuery = $@"
                 IF NOT EXISTS (
                     SELECT * FROM INFORMATION_SCHEMA.TABLES 
                     WHERE TABLE_NAME = '{tableName}'
                 )
                 BEGIN
                     CREATE TABLE {tableName} (
-                        {GenerateSqlColumns()}
+                        {string.Join(",", columns.Select(c => $"{c} NVARCHAR(MAX) NULL"))}
                     )
                 END";
 
-            await connection.ExecuteAsync(checkTableQuery);
+            await connection.ExecuteAsync(createTableQuery);
 
-            var props = typeof(T).GetProperties();
-            var whereConditions = new List<string>();
-            var parameters = new DynamicParameters();
-
-            foreach (var prop in props)
-            {
-                var value = prop.GetValue(data);
-                if (value == null)
-                {
-                    whereConditions.Add($"{prop.Name} IS NULL");
-                }
-                else
-                {
-                    whereConditions.Add($"{prop.Name} = @{prop.Name}");
-                    parameters.Add($"@{prop.Name}", value);
-                }
-            }
-
-            var whereClause = string.Join(" AND ", whereConditions);
-            var checkDuplicateQuery = $"SELECT COUNT(1) FROM {tableName} WHERE {whereClause}";
-
-            var exists = await connection.ExecuteScalarAsync<int>(checkDuplicateQuery, parameters);
-
-            if (exists == 0)
-            {
-                var columns = string.Join(",", props.Select(p => p.Name));
-                var values = string.Join(",", props.Select(p => "@" + p.Name));
-                var insertQuery = $"INSERT INTO {tableName} ({columns}) VALUES ({values})";
-
-                await connection.ExecuteAsync(insertQuery, data);
-                Console.WriteLine("New data inserted into table.");
-            }
-            else
-            {
-                Console.WriteLine("Input data is already present in the table. Skipping insert.");
-
-            }
-
+            // Insert data
+            var insertQuery = $"INSERT INTO {tableName} ({string.Join(",", columns)}) VALUES ({string.Join(",", values)})";
+            await connection.ExecuteAsync(insertQuery, parameters);
         }
 
-        // Generating dynamic SQL columns based on the model
-        private string GenerateSqlColumns()
+        private bool IsComplexType(Type type)
         {
-            var props = typeof(T).GetProperties();
-            var columns = new List<string>();
-
-            foreach (var prop in props)
-            {
-                string columnType = GetSqlType(prop.PropertyType);
-                string nullability = prop.PropertyType.IsValueType && Nullable.GetUnderlyingType(prop.PropertyType) == null ? "NOT NULL" : "NULL";
-                columns.Add($"{prop.Name} {columnType} {nullability}");
-            }
-
-            return string.Join(",", columns);
-        }
-
-        // Mapping C# types to SQL types
-        private string GetSqlType(Type type)
-        {
-            Type t = Nullable.GetUnderlyingType(type) ?? type;
-
-            return t.Name switch
-            {
-                "Int32" => "INT",
-                "Int64" => "BIGINT",
-                "Decimal" => "DECIMAL(18,2)",
-                "Double" => "FLOAT",
-                "DateTime" => "DATETIME",
-                "Boolean" => "BIT",
-                _ => "NVARCHAR(MAX)"
-            };
+            return !(type.IsPrimitive || type.IsEnum || type == typeof(string) || type == typeof(DateTime) || type == typeof(decimal));
         }
     }
 }

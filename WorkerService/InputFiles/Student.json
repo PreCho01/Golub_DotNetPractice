@@ -1,0 +1,23 @@
+[
+    {
+        "StudentId": 1,
+        "Name": "John Doe",
+        "Department": "Science",
+        "EnrolledCourses": [ "Physics", "Math", "Chemistry" ],
+        "SubjectScores": {
+            "Math": 85,
+            "English": 90,
+            "Physics": 88
+        }
+    },
+    {
+        "StudentId": 2,
+        "Name": "Jane Smith",
+        "Department": "Arts",
+        "EnrolledCourses": [ "History", "English" ],
+        "SubjectScores": {
+            "History": 92,
+            "English": 87
+        }
+    }
+]

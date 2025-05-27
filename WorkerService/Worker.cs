@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Text.Json;
 using CommonHelper;
 using WorkerService.Harshit.Services;
@@ -32,6 +31,9 @@ namespace WorkerService
                     break;
             }
 
+
+            //await ProcessJsonFileAsync<Employee>("empData.json", "Employee", connStr);
+            await ProcessJsonFileAsync<List<StudentProfile>>("Student.json", "StudentProfile", connStr);
         }
 
         private async Task ProcessJsonFileAsync<T>(string fileName, string tableName, string connStr)
@@ -46,12 +48,31 @@ namespace WorkerService
 
                     var model = JsonSerializer.Deserialize<T>(jsonData);
 
-                    var handler = new DataHandler<T>(connStr);
-                    await handler.SaveDataAsync(model, tableName);
+                    //var handler = new DataHandler<T>(connStr);
+                    //await handler.SaveDataAsync(model, tableName);
 
+                    var handler = new DataHandler<object>(connStr);
                     string saveFolder = Path.Combine(Directory.GetCurrentDirectory(), "SavedFiles");
                     //await SaveInFile.SaveJsonToFileAsync(model, saveFolder, $"{Path.GetFileNameWithoutExtension(fileName)}_output.json");
-                    await SaveInFile.SaveExcelToFileAsync(model, saveFolder, $"{Path.GetFileNameWithoutExtension(fileName)}_output.xlsm");
+                    //await SaveInFile.SaveExcelToFileAsync(model, saveFolder, $"{Path.GetFileNameWithoutExtension(fileName)}_output.xlsm");
+
+                    if (model is IEnumerable<object> list)
+                    {
+                        foreach (var item in list)
+                        {
+                            await handler.SaveComplexDataAsync(item, tableName);
+                        }
+                        //await SaveInFile.SaveJsonToFileAsync(model, saveFolder, $"{Path.GetFileNameWithoutExtension(fileName)}_output.json");
+                        await SaveInFile.SaveComplexExcelToFileAsync(model, saveFolder, $"{Path.GetFileNameWithoutExtension(fileName)}_output.xlsm");
+
+                    }
+                    else
+                    {
+
+                        await handler.SaveComplexDataAsync(model, tableName); 
+                        //await SaveInFile.SaveJsonToFileAsync(model, saveFolder, $"{Path.GetFileNameWithoutExtension(fileName)}_output.json");
+                        await SaveInFile.SaveComplexExcelToFileAsync(model, saveFolder, $"{Path.GetFileNameWithoutExtension(fileName)}_output.xlsm");
+                    }
 
                     _logger.LogInformation($"Processed {fileName} into {tableName}");
                 }

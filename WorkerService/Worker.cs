@@ -20,7 +20,8 @@ namespace WorkerService
             var connStr = _config.GetAppSettings("DefaultConnection", "ConnectionStrings");
 
             //await ProcessJsonFileAsync<Employee>("empData.json", "Employee", connStr);
-            await ProcessJsonFileAsync<List<StudentProfile>>("Student.json", "StudentProfile", connStr);
+            //await ProcessJsonFileAsync<List<StudentProfile>>("Student.json", "StudentProfile", connStr);
+            await ReadUserProfilesFromExcel("User_output.xlsm");
         }
 
         private async Task ProcessJsonFileAsync<T>(string fileName, string tableName, string connStr)
@@ -77,5 +78,37 @@ namespace WorkerService
             _logger.LogInformation($"{fileName} File processed completed.");
 
         }
+
+
+        private async Task ReadUserProfilesFromExcel(string fileName)
+        {
+            string filePath = Path.Combine(Directory.GetCurrentDirectory(), "SavedFiles", fileName);
+
+            if (File.Exists(filePath))
+            {
+                var users = ReadFromFile.ReadExcelToUserProfiles(filePath);
+                var connStr = _config.GetAppSettings("DefaultConnection", "ConnectionStrings");
+                await SaveUserProfilesToDatabase(users, "UserProfile", connStr);
+            }
+            else
+            {
+                _logger.LogWarning($"Excel file not found at {filePath}");
+            }
+
+            await Task.CompletedTask;
+        }
+
+        private async Task SaveUserProfilesToDatabase(List<UserProfile> users, string tableName, string connStr)
+        {
+            var handler = new DataHandler<object>(connStr);
+
+            foreach (var user in users)
+            {
+                await handler.SaveComplexDataAsync(user, tableName);
+            }
+
+            _logger.LogInformation($"Saved {users.Count} user profiles to table {tableName}.");
+        }
     }
 }
+

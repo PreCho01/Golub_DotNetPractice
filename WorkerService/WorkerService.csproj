@@ -21,7 +21,6 @@
 
   <ItemGroup>
     <Folder Include="Harshit\" />
-    <Folder Include="Models\" />
     <Folder Include="Rahul\" />
   </ItemGroup>
 </Project>

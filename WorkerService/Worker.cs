@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using CommonHelper;
+using WorkerService.Ayush;
 using WorkerService.Models;
 using WorkerService.Preeti;
 
@@ -20,7 +21,8 @@ namespace WorkerService
         {
             var connStr = _config.GetAppSettings("DefaultConnection", "ConnectionStrings");
 
-            await ProcessJsonFileAsync<Employee>("empData.json", "Employee", connStr);
+            //await ProcessJsonFileAsync<Employee>("empData.json", "Employee", connStr);
+            await SaveDataInFile.SaveToSqlDatabaseAsync("Downloads/user.json", connStr);
 
         }
 

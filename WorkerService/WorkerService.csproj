@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <Folder Include="SqlScripts\" />
+    <Folder Include="Harshit\" />
     <Folder Include="Rahul\" />
   </ItemGroup>
 </Project>

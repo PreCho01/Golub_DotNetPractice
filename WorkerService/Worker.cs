@@ -1,5 +1,6 @@
 using System.Text.Json;
 using CommonHelper;
+using WorkerService.Ayush;
 using WorkerService.Harshit.Services;
 using WorkerService.Models;
 using WorkerService.Preeti;
@@ -31,6 +32,8 @@ namespace WorkerService
                     break;
             }
 
+            //await ProcessJsonFileAsync<Employee>("empData.json", "Employee", connStr);
+            await SaveDataInFile.SaveToSqlDatabaseAsync("Downloads/user.json", connStr);
 
             //await ProcessJsonFileAsync<Employee>("empData.json", "Employee", connStr);
             await ProcessJsonFileAsync<List<StudentProfile>>("Student.json", "StudentProfile", connStr);

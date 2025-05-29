@@ -20,17 +20,68 @@ namespace WorkerService.Harshit.Services
             _dbConnection = dbConnection;
             _logger = logger;
         }
-        public async Task<int> AddDataToDb<T>(T data,string tableName)
+        public async Task<int> AddDataToDb<T>(object data, string tableName)
         {
-            var parameters = new DynamicParameters();
-            foreach(var prop in typeof(T).GetProperties())
+            await EnsureStoredProcedureExists();
+
+            List<T> dataList = new();
+
+            if (data is T single)
             {
-                parameters.Add(prop.Name, prop.GetValue(data));
+                dataList.Add(single);
             }
-            parameters.Add("TableName",tableName);
-            var result = await _dbConnection.ExecuteAsync("AddData",parameters);
-            return result;
+            else if (data is IEnumerable<T> list)
+            {
+                dataList = list.ToList();
+            }
+            else if (data is JsonElement jsonElement)
+            {
+                // Handle deserialization from raw JSON input (optional)
+                var json = jsonElement.GetRawText();
+                if (json.TrimStart().StartsWith("{"))
+                {
+                    dataList.Add(JsonSerializer.Deserialize<T>(json));
+                }
+                else
+                {
+                    dataList = JsonSerializer.Deserialize<List<T>>(json);
+                }
+            }
+            else
+            {
+                throw new ArgumentException("Input must be a single object or a list of objects.");
+            }
+
+            if (!dataList.Any())
+                throw new ArgumentException("No data to insert.");
+
+            // Prepare column definitions
+            var columnDefs = typeof(T).GetProperties().Select(p => new Dictionary<string, string>
+    {
+        { "Key", p.Name },
+        { "SqlType", GetSqlDbType(p.PropertyType) }
+    }).ToList();
+
+            // Prepare row data
+            var rows = dataList.Select(item =>
+            {
+                var dict = new Dictionary<string, string>();
+                foreach (var prop in typeof(T).GetProperties())
+                {
+                    var value = prop.GetValue(item)?.ToString() ?? string.Empty;
+                    dict[prop.Name] = value;
+                }
+                return dict;
+            }).ToList();
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@TableName", tableName);
+            parameters.Add("@Columns", JsonSerializer.Serialize(columnDefs));
+            parameters.Add("@Rows", JsonSerializer.Serialize(rows)); // Always an array
+
+            return await _dbConnection.ExecuteAsync("AddData", parameters, commandType: CommandType.StoredProcedure);
         }
+
         public async Task GetDataFromDbOnFile(string filename,string tableName, string ?fileType)
         {
             var result = await _dbConnection.QueryAsync("GetData", new { TableName = tableName});
@@ -90,6 +141,24 @@ namespace WorkerService.Harshit.Services
             }
 
             return false;
+        }
+        private string GetSqlDbType(Type type)
+        {
+            if (type == typeof(int) || type == typeof(int?)) return "INT";
+            if (type == typeof(string)) return "NVARCHAR(MAX)";
+            if (type == typeof(DateTime) || type == typeof(DateTime?)) return "DATETIME";
+            if (type == typeof(bool) || type == typeof(bool?)) return "BIT";
+            if (type == typeof(decimal) || type == typeof(decimal?)) return "DECIMAL(18,2)";
+            if (type == typeof(double) || type == typeof(double?)) return "FLOAT";
+            // Add more types as needed
+            throw new NotSupportedException($"Unsupported property type: {type.Name}");
+        }
+        public async Task EnsureStoredProcedureExists()
+        {
+            var path = Path.Combine(Directory.GetCurrentDirectory(), "SqlScripts", "AddDataProcedure.sql");
+            var sql = await File.ReadAllTextAsync(path);
+            await _dbConnection.ExecuteAsync(sql);
+            Console.WriteLine("execx");
         }
     }
 }

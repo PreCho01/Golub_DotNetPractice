@@ -11,5 +11,6 @@ namespace WorkerService.Models
         public int Id { get; set; }
         public string Name { get; set; }
         public double Price { get; set; }
+        // try to add dictionary here as well
     }
 }

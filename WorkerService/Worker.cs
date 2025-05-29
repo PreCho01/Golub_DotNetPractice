@@ -24,8 +24,8 @@ namespace WorkerService
             int userOption = Convert.ToInt32(Console.ReadLine());
             switch (userOption)
             {
-                case 0: await ProcessJsonFileAsync<Employee>("empData.json", "Employee", connStr);
-                    break;
+                //case 0: await ProcessJsonFileAsync<Employee>("empData.json", "Employee", connStr);
+                //    break;
                 case 1:
                     await ProcessDataFromJson<Product>("Products.json", "Product");
                     break;
@@ -101,9 +101,10 @@ namespace WorkerService
             try
             {
                 var jsonData = await File.ReadAllTextAsync(filePath);
-
-                var data = JsonSerializer.Deserialize<List<T>>(jsonData);
-               await _dataHandlerService.AddDataToDb(jsonData, tableName);
+                Console.WriteLine("here");
+               
+               await _dataHandlerService.AddDataToDb<T>(JsonSerializer.Deserialize<T>(jsonData), tableName);
+                Console.WriteLine("here2");
             }
             catch (Exception ex)
             {

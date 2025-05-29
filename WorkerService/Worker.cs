@@ -18,12 +18,12 @@ namespace WorkerService
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             var connStr = _config.GetAppSettings("DefaultConnection", "ConnectionStrings");
-
             //await ProcessJsonFileAsync<Employee>("empData.json", "Employee", connStr);
             //await ProcessJsonFileAsync<List<StudentProfile>>("Student.json", "StudentProfile", connStr);
             await ReadUserProfilesFromExcel("User_output.xlsm");
         }
 
+        //Preeti
         private async Task ProcessJsonFileAsync<T>(string fileName, string tableName, string connStr)
         {
             string jsonFilePath = Path.Combine(Directory.GetCurrentDirectory(), "InputFiles", fileName);
@@ -35,15 +35,9 @@ namespace WorkerService
                     var jsonData = await File.ReadAllTextAsync(jsonFilePath);
 
                     var model = JsonSerializer.Deserialize<T>(jsonData);
-
-                    //var handler = new DataHandler<T>(connStr);
-                    //await handler.SaveDataAsync(model, tableName);
-
                     var handler = new DataHandler<object>(connStr);
                     string saveFolder = Path.Combine(Directory.GetCurrentDirectory(), "SavedFiles");
-                    //await SaveInFile.SaveJsonToFileAsync(model, saveFolder, $"{Path.GetFileNameWithoutExtension(fileName)}_output.json");
-                    //await SaveInFile.SaveExcelToFileAsync(model, saveFolder, $"{Path.GetFileNameWithoutExtension(fileName)}_output.xlsm");
-
+                  
                     if (model is IEnumerable<object> list)
                     {
                         foreach (var item in list)
@@ -79,7 +73,7 @@ namespace WorkerService
 
         }
 
-
+        //Preeti
         private async Task ReadUserProfilesFromExcel(string fileName)
         {
             string filePath = Path.Combine(Directory.GetCurrentDirectory(), "SavedFiles", fileName);
@@ -98,6 +92,7 @@ namespace WorkerService
             await Task.CompletedTask;
         }
 
+        //Preeti
         private async Task SaveUserProfilesToDatabase(List<UserProfile> users, string tableName, string connStr)
         {
             var handler = new DataHandler<object>(connStr);

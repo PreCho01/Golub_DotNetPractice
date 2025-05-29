@@ -17,7 +17,7 @@ namespace WorkerService
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var connStr = _config.GetAppSettings("DefaultConnection", "ConnectionStrings");
+            var connStr = _config.GetAppSettings("PreConnection", "ConnectionStrings");
 
             //await ProcessJsonFileAsync<Employee>("empData.json", "Employee", connStr);
             //await ProcessJsonFileAsync<List<StudentProfile>>("Student.json", "StudentProfile", connStr);
@@ -87,7 +87,7 @@ namespace WorkerService
             if (File.Exists(filePath))
             {
                 var users = ReadFromFile.ReadExcelToUserProfiles(filePath);
-                var connStr = _config.GetAppSettings("DefaultConnection", "ConnectionStrings");
+                var connStr = _config.GetAppSettings("PreConnection", "ConnectionStrings");
                 await SaveUserProfilesToDatabase(users, "UserProfile", connStr);
             }
             else

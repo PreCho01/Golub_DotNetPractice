@@ -21,7 +21,7 @@ namespace WorkerService
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var connStr = _config.GetAppSettings("PreConnection", "ConnectionStrings");
+            var connStr = _config.GetAppSettings("DefaultConnection", "ConnectionStrings");
             int userOption = Convert.ToInt32(Console.ReadLine());
             switch (userOption)
             {
@@ -32,7 +32,6 @@ namespace WorkerService
                     break;
             }
 
-            //await ProcessJsonFileAsync<Employee>("empData.json", "Employee", connStr);
             await SaveDataInFile.SaveToSqlDatabaseAsync("Downloads/user.json", connStr);
 
             //await ProcessJsonFileAsync<Employee>("empData.json", "Employee", connStr);

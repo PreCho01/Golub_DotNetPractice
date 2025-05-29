@@ -21,7 +21,7 @@ namespace WorkerService
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var connStr = _config.GetAppSettings("DefaultConnection", "ConnectionStrings");
+            var connStr = _config.GetAppSettings("PreConnection", "ConnectionStrings");
             int userOption = Convert.ToInt32(Console.ReadLine());
             switch (userOption)
             {

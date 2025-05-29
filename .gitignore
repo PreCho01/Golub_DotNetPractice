@@ -362,3 +362,5 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /WorkerService/Models/Employee.cs
+/WorkerService/SavedFiles/Student_output.xlsm
+/WorkerService/SavedFiles/Student_output.xlsm

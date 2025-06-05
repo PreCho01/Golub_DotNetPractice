@@ -20,7 +20,9 @@ namespace WorkerService
             var connStr = _config.GetAppSettings("DefaultConnection", "ConnectionStrings");
             //await ProcessJsonFileAsync<Employee>("empData.json", "Employee", connStr);
             //await ProcessJsonFileAsync<List<StudentProfile>>("Student.json", "StudentProfile", connStr);
-            await ReadUserProfilesFromExcel("User_output.xlsm");
+            //await ReadUserProfilesFromExcel("User_output.xlsm");
+            await ReadAndSaveFromExcel<UserProfile>("User_output.xlsm", "UserProfile");
+
         }
 
         //Preeti
@@ -104,6 +106,36 @@ namespace WorkerService
 
             _logger.LogInformation($"Saved {users.Count} user profiles to table {tableName}.");
         }
+
+        //Generic - Preeti
+        private async Task ReadAndSaveFromExcel<T>(string fileName, string tableName) where T : new()
+        {
+            string filePath = Path.Combine(Directory.GetCurrentDirectory(), "SavedFiles", fileName);
+
+            if (!File.Exists(filePath))
+            {
+                _logger.LogWarning($"Excel file not found at {filePath}");
+                return;
+            }
+
+            var objects = ReadFromFile.ReadExcelToObjects<T>(filePath);
+
+            foreach (var obj in objects)
+            {
+                _logger.LogInformation($"Object: {JsonSerializer.Serialize(obj)}");
+            }
+
+            var connStr = _config.GetAppSettings("DefaultConnection", "ConnectionStrings");
+            var handler = new DataHandler<object>(connStr);
+
+            foreach (var obj in objects)
+            {
+                await handler.SaveComplexDataAsync(obj, tableName);
+            }
+
+            _logger.LogInformation($"Saved {objects.Count} records to table {tableName}.");
+        }
+
     }
 }
 

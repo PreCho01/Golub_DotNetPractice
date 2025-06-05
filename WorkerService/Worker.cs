@@ -22,7 +22,7 @@ namespace WorkerService
             var connStr = _config.GetAppSettings("DefaultConnection", "ConnectionStrings");
 
             //await ProcessJsonFileAsync<Employee>("empData.json", "Employee", connStr);
-            await SaveDataInFile.SaveToSqlDatabaseAsync("Downloads/user.json", connStr);
+            await SaveDataInFile.SaveToSqlDatabaseAsync("user.json", connStr);
 
         }
 

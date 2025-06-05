@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.Data.SqlClient;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,18 +13,18 @@ namespace WorkerService.Ayush
     {
         
         // Async method to load users from JSON
-        private static async Task<List<User>> LoadUsersFromJsonAsync(string filePath)
+        private static async Task<List<Users>> LoadUsersFromJsonAsync(string filePath)
         {
             if (!File.Exists(filePath))
                 throw new FileNotFoundException("JSON file not found.", filePath);
 
             string json = await File.ReadAllTextAsync(filePath);
-            return JsonConvert.DeserializeObject<List<User>>(json);
+            return JsonConvert.DeserializeObject<List<Users>>(json);
         }
 
-        // Async method to save to SQL
-        public static async Task SaveToSqlDatabaseAsync(string jsonFilePath, string connectionString)
+        public static async Task SaveToSqlDatabaseAsync(string fileName, string connectionString)
         {
+            string jsonFilePath = Path.Combine(Directory.GetCurrentDirectory(), "InputFiles", fileName);
             var users = await LoadUsersFromJsonAsync(jsonFilePath);
 
             using (SqlConnection conn = new SqlConnection(connectionString))
@@ -41,38 +43,41 @@ namespace WorkerService.Ayush
             }
         }
 
-        // Async method to write to JSON file
-        public static async Task SaveToJsonFileAsync(string jsonFilePath, string outputFilePath)
+        public static async Task SaveToJsonFileAsync(string fileName, string outputFilePath)
         {
+            string jsonFilePath = Path.Combine(Directory.GetCurrentDirectory(), "InputFiles", fileName);
             var users = await LoadUsersFromJsonAsync(jsonFilePath);
             string outputJson = JsonConvert.SerializeObject(users, Formatting.Indented);
             await File.WriteAllTextAsync(outputFilePath, outputJson);
         }
 
-        // Excel file write (sync, no async APIs in EPPlus)
-        public static void SaveToExcelFile(string jsonFilePath, string excelFilePath)
+        public static async Task SaveToCsvFile(string fileName, string csvFilePath)
         {
-            var users = LoadUsersFromJsonAsync(jsonFilePath).Result;
+            string jsonFilePath = Path.Combine(Directory.GetCurrentDirectory(), "InputFiles", fileName);
+            var users = await LoadUsersFromJsonAsync(jsonFilePath);
 
-            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-
-            using (var package = new ExcelPackage())
+            using (var writer = new StreamWriter(csvFilePath))
             {
-                var worksheet = package.Workbook.Worksheets.Add("Users");
+                // Write header
+                writer.WriteLine("Id,Name,Age");
 
-                worksheet.Cells[1, 1].Value = "Id";
-                worksheet.Cells[1, 2].Value = "Name";
-                worksheet.Cells[1, 3].Value = "Age";
-
-                for (int i = 0; i < users.Count; i++)
+                // Write user data
+                foreach (var user in users)
                 {
-                    worksheet.Cells[i + 2, 1].Value = users[i].Id;
-                    worksheet.Cells[i + 2, 2].Value = users[i].Name;
-                    worksheet.Cells[i + 2, 3].Value = users[i].Age;
+                    writer.WriteLine($"{user.Id},{EscapeCsv(user.Name)},{user.Age}");
                 }
-
-                File.WriteAllBytes(excelFilePath, package.GetAsByteArray());
             }
+        }
+
+        // Helper to escape CSV values if needed (e.g. names with commas)
+        private static string EscapeCsv(string value)
+        {
+            if (value.Contains(",") || value.Contains("\"") || value.Contains("\n"))
+            {
+                value = value.Replace("\"", "\"\"");
+                return $"\"{value}\"";
+            }
+            return value;
         }
     }
 }
